@@ -18,6 +18,7 @@ module Shogi
         @captured = []
       end
       @validate_movement = true
+      @count = 0
     end
 
     def to_csa
@@ -271,6 +272,115 @@ module Shogi
 
     def to_shogi_y_from_array_y(array_y)
       array_y + 1
+    end
+
+    # brainking
+    def move_by_bki(bki)
+      index = 0
+      promoted = false
+
+      if bki[index] == "+"
+        promoted = true
+        index += 1
+      end
+
+      koma = to_csa_koma_from_bki(bki[index])
+      if promoted
+        koma = promote(koma)
+      end
+      index += 1
+
+      before_x = -1
+      before_y = -1
+      if /[1-9]/ =~ bki[index]
+        before_x = bki[index].to_i
+        index += 1
+      elsif /[a-i]/ =~ bki[index]
+        before_y = to_csa_y_from_bki(bki[index])
+        index += 1
+      end
+
+      hand = false
+      if bki[index] == "*"
+        hand = true
+      end
+      index += 1
+
+      after_x = bki[index].to_i
+      index += 1
+
+      after_y = to_csa_y_from_bki(bki[index])
+      index += 1
+
+      if hand
+        move_by_csa(get_csa(is_black, 0, 0, after_x, after_y, koma))
+        @count = @count + 1
+        return self
+      end
+
+      @position.each_with_index do |row, y|
+        if before_y > 0 && to_array_y_from_shogi_y(before_y) != y
+          next
+        end
+
+        row.each_with_index do |cell, x|
+          if before_x > 0 && to_array_x_from_shogi_x(before_x) != x
+            next
+          end
+
+          if cell == attach_prefix_teban(is_black, koma)
+            begin
+              move_by_csa(get_csa(is_black, to_shogi_x_from_array_x(x), to_shogi_y_from_array_y(y), after_x, after_y, (bki[index] == "+" ? promote(koma) : koma)))
+              @count = @count + 1
+              return self
+            rescue
+              next
+            end
+          end
+        end
+      end
+    end
+
+    def is_black
+      @count % 2 == 0
+    end
+
+    def attach_prefix_teban(black, str)
+      (black ? "+" : "-") + str
+    end
+
+    def get_csa(black, before_x, before_y, after_x, after_y, koma)
+      attach_prefix_teban(black, before_x.to_s + before_y.to_s + after_x.to_s + after_y.to_s + koma)
+    end
+
+    def to_csa_koma_from_bki(koma)
+      hash = {
+        "P" => "FU",
+        "L" => "KY",
+        "N" => "KE",
+        "S" => "GI",
+        "G" => "KI",
+        "B" => "KA",
+        "R" => "HI",
+        "K" => "OU"
+      }
+      hash[koma]
+    end
+
+    def promote(koma)
+      hash = {
+        "FU" => "TO",
+        "KY" => "NY",
+        "KE" => "NK",
+        "GI" => "NG",
+        "KA" => "UM",
+        "HI" => "RY"
+      }
+      hash[koma]
+    end
+
+    def to_csa_y_from_bki(y)
+      y.ord - "a".ord + 1
     end
   end
 end

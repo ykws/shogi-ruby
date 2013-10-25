@@ -319,4 +319,30 @@ P-00KA
       @board.move("+2755FU", :csa)
     end
   end
+
+  # brainking
+  def test_move_bki
+    @board.default_format = :bki
+
+    assert_nothing_raised do
+      @board.move("P-7f")
+      @board.move("P-3d")
+      @board.move("Bx2b+")
+      @board.move("Sx2b")
+      @board.move("B*5e")
+    end
+    assert_equal(<<-EOT, @board.to_csa)
+P1-KY-KE-GI-KI-OU-KI * -KE-KY
+P2 * -HI *  *  *  *  * -GI * 
+P3-FU-FU-FU-FU-FU-FU * -FU-FU
+P4 *  *  *  *  *  * -FU *  * 
+P5 *  *  *  * +KA *  *  *  * 
+P6 *  * +FU *  *  *  *  *  * 
+P7+FU+FU * +FU+FU+FU+FU+FU+FU
+P8 *  *  *  *  *  *  * +HI * 
+P9+KY+KE+GI+KI+OU+KI+GI+KE+KY
+P+
+P-00KA
+    EOT
+  end
 end
